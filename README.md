@@ -1,43 +1,43 @@
 # Automotive Marketplace API
 
-REST API backend untuk platform marketplace otomotif.
+REST API backend for an automotive marketplace platform.
 
-API ini dirancang untuk mengelola listing kendaraan, kategori kendaraan, dynamic filter, full-text search, kombinasi filter, cursor-based pagination, dan data relasional menggunakan PostgreSQL.
+This API is designed to manage vehicle listings, vehicle categories, dynamic filters, full-text search, multi-filter combinations, cursor-based pagination, and relational data using PostgreSQL.
 
 ---
 
-## 1. Teknologi yang Digunakan
+## 1. Technologies Used
 
 * Node.js
 * TypeScript
 * Express.js
 * PostgreSQL
 * `pg` PostgreSQL driver
-* Zod untuk validasi request
+* Zod for request validation
 * Raw SQL
 * OpenAPI
 
-Aplikasi menggunakan PostgreSQL sebagai database dan library `pg` untuk menjalankan query SQL secara langsung.
+The application uses PostgreSQL as its database and the `pg` library to execute SQL queries directly.
 
 ---
 
-## 2. Fitur
+## 2. Features
 
-### Listing Kendaraan
+### Vehicle Listings
 
-API menyediakan fitur:
+The API provides the following features:
 
-* Membuat listing kendaraan
-* Menampilkan daftar listing
-* Menampilkan detail listing
-* Mengubah listing
-* Soft delete listing
+* Create vehicle listings
+* Retrieve listing collections
+* Retrieve listing details
+* Update listings
+* Soft delete listings
 * Listing images
 * Dynamic listing attributes
-* Filtering dan sorting
+* Filtering and sorting
 * Cursor-based pagination
 
-Status listing yang digunakan:
+Listing statuses:
 
 * `available`
 * `pending`
@@ -48,12 +48,13 @@ Status listing yang digunakan:
 
 ### Categories
 
-Kategori kendaraan menggunakan struktur hierarchical category.
+Vehicle categories use a hierarchical category structure.
 
-Contoh struktur:
+Example:
 
+```text
 Cars
- - SUV
+ -  SUV
  - Sedan
  - Hatchback
 
@@ -61,34 +62,36 @@ Motorcycles
  - Cruiser
  - Scooter
  - Sport
+```
 
-Struktur kategori menggunakan `parent_id` yang mengarah ke `categories.id`.
+The category hierarchy uses `parent_id`, which references `categories.id`.
 
-Dengan pendekatan ini, database dapat menyimpan kategori dengan kedalaman yang tidak dibatasi oleh struktur tabel.
+This approach allows the database to support categories with arbitrary depth without being limited by a fixed number of category levels.
 
-API juga mendukung:
+The API also supports:
 
-* Menampilkan daftar kategori
-* Menampilkan detail kategori
-* Menampilkan listing berdasarkan kategori
-* Membuat kategori
-* Mengubah kategori
-* Query kategori secara rekursif
+* Retrieve category collections
+* Retrieve category details
+* Retrieve listings by category
+* Create categories
+* Update categories
+* Recursive category queries
 
 ---
 
 ### Dynamic Filter
 
-Dynamic filter digunakan agar setiap kategori dapat memiliki filter yang berbeda.
+Dynamic filters allow each category to have its own set of filter attributes.
 
-Jenis filter yang didukung:
+Supported filter types:
 
 * Enum
 * Range
 * Boolean
 
-Contoh:
+Example:
 
+```text
 Cars
  - Transmission
  - Fuel Type
@@ -100,28 +103,28 @@ Motorcycles
  - Fuel Type
  - Engine Capacity
  - Color
+```
 
+Filter definitions are stored in tables separate from the `listings` table.
 
-Definisi filter disimpan pada tabel terpisah dari tabel `listings`.
-
-Dengan pendekatan ini, filter baru dapat ditambahkan tanpa harus mengubah struktur utama tabel `listings`.
+This approach allows new filters to be added without modifying the main `listings` table structure.
 
 ---
 
 ### Search
 
-Full-text search menggunakan PostgreSQL `tsvector`.
+Full-text search uses PostgreSQL `tsvector`.
 
-Search vector dibentuk dari:
+The search vector is built from:
 
 * `make`
 * `model`
 * `description`
 * `location`
 
-Search vector menggunakan **GIN index** untuk membantu pencarian text.
+The search vector uses a **GIN index** to improve text search performance.
 
-Search juga mendukung kombinasi beberapa filter dalam satu request:
+Search also supports combinations of multiple filters in a single request:
 
 * Text search
 * Category
@@ -135,214 +138,240 @@ Search juga mendukung kombinasi beberapa filter dalam satu request:
 * Dynamic range filter
 * Dynamic boolean filter
 
-Dynamic filter menggunakan SQL `EXISTS`, sehingga beberapa dynamic filter dapat digunakan secara bersamaan.
+Dynamic filters use SQL `EXISTS`, allowing multiple dynamic filters to be applied simultaneously.
 
 ---
 
 ### Cursor Pagination
 
-Endpoint browse dan search menggunakan cursor-based pagination.
+The browse and search endpoints use cursor-based pagination.
 
-Cursor pagination dipilih untuk mengurangi ketergantungan terhadap `OFFSET` ketika jumlah data semakin besar.
+Cursor pagination was chosen to reduce dependency on `OFFSET` as the dataset grows.
 
-Pagination menggunakan kombinasi:
+Pagination uses a combination of:
 
+```text
 created_at
 id
+```
 
-sebagai cursor untuk menjaga urutan data tetap konsisten.
+as the cursor to maintain consistent and deterministic ordering.
 
 ---
 
 ### Data Seeding
 
-Project menyediakan seed data untuk kebutuhan testing dan demonstrasi.
+The project provides seed data for testing and demonstration purposes.
 
-Data yang dibuat:
+Generated data:
 
-* 8 kategori
+* 8 categories
 * 48 filter attributes
 * 120 filter options
 * 500 listings
-* 3.000 dynamic attribute values
-* 1.000 listing images
+* 3,000 dynamic attribute values
+* 1,000 listing images
 
-Data mencakup beberapa kategori kendaraan, termasuk mobil dan sepeda motor.
+The dataset covers multiple vehicle categories, including cars and motorcycles.
 
 ---
 
-## 3. Arsitektur
+## 3. Architecture
 
-Aplikasi menggunakan pendekatan **Layered Architecture**.
+The application uses a **Layered Architecture** approach.
 
-Alur request:
+Request flow:
 
+```text
 HTTP Request -> Routes -> Controllers -> Services -> Repositories -> PostgreSQL
+```
 
 ### Routes
 
-Menentukan endpoint dan routing HTTP.
+Define HTTP endpoints and routing.
 
 ### Controllers
 
-Menangani HTTP request dan HTTP response.
+Handle HTTP requests and HTTP responses.
 
 ### Services
 
-Menangani business logic dan application logic.
+Handle business logic and application logic.
 
 ### Repositories
 
-Menangani akses database menggunakan raw SQL.
+Handle database access using raw SQL.
 
-Pemisahan layer ini membuat HTTP logic, business logic, dan database logic tetap terpisah sehingga lebih mudah dikembangkan dan dipelihara.
+This separation keeps HTTP logic, business logic, and database logic separated, making the application easier to develop, maintain, and extend.
 
 ---
 
 ## 4. Database Schema
 
-Database menggunakan relational database dengan beberapa entity utama:
+The database uses a relational model with the following main entities:
 
-users  -> Additional
+```text
+users
+
 categories
-listings
-listing_images
-filter_attributes
-filter_attribute_options
-listing_attribute_values
 
+listings
+
+listing_images
+
+filter_attributes
+
+filter_attribute_options
+
+listing_attribute_values
+```
 
 ### ERD
 
-ERD dibuat menggunakan **dbdiagram.io**.
+The ERD was created using **dbdiagram.io**.
 
-Source ERD:
+ERD source:
 
+```text
 docs/erd.dbml
+```
 
-File tersebut dapat digunakan untuk melihat dan mengembangkan struktur database secara visual.
+The file can be used to view and further develop the database structure visually.
 
 ---
 
 ## 5. Indexing & Query Optimization
 
-Index dibuat berdasarkan pola query yang digunakan oleh aplikasi.
+Indexes are created based on the query patterns used by the application.
 
 ### Listings
 
-Index yang digunakan antara lain:
+Indexes include:
 
+```text
 idx_listings_category_id
-idx_listings_status
-idx_listings_created_at
-idx_listings_category_status_created_at
-idx_listings_search_vector
 
-Composite index digunakan untuk query yang sering menggabungkan beberapa kondisi, terutama category, status, dan pagination.
+idx_listings_status
+
+idx_listings_created_at
+
+idx_listings_category_status_created_at
+
+idx_listings_search_vector
+```
+
+Composite indexes are used for queries that frequently combine multiple conditions, particularly category, status, and pagination.
 
 ### Dynamic Numeric Filter
 
-Untuk numeric filter digunakan index:
+Numeric filters use the following index:
 
+```text
 (attribute_id, value_number)
+```
 
+This index helps queries such as:
 
-Index ini membantu query seperti:
-
+```text
 engine_capacity >= 1500
 price range
 year range
-
+```
 
 ### Dynamic Boolean Filter
 
-Untuk boolean filter digunakan index:
+Boolean filters use the following index:
 
+```text
 (attribute_id, value_boolean)
+```
 
+### Query Testing
 
-### Query yang Diuji
+Query performance was tested using `EXPLAIN ANALYZE` for several key use cases:
 
-Query performance diuji menggunakan `EXPLAIN ANALYZE` untuk beberapa kebutuhan utama:
-
-* Browse listing
+* Listing browse
 * Category listing
 * Full-text search
-* Numeric filter
-* Boolean filter
+* Numeric filtering
+* Boolean filtering
 * Multi-filter search
 
-Index tidak dibuat untuk setiap kemungkinan kombinasi filter karena jumlah kombinasi dapat menjadi sangat besar.
+Indexes are not created for every possible filter combination because the number of combinations can become extremely large.
 
-Index dibuat berdasarkan pola query yang paling umum digunakan.
+Instead, indexes are created based on the most common query patterns.
 
 ---
 
 ## 6. Soft Delete
 
-Listing tidak dihapus secara fisik dari database.
+Listings are not physically deleted from the database.
 
-Ketika endpoint delete dipanggil, status listing diubah menjadi:
+When the delete endpoint is called, the listing status is changed to:
 
+```text
 removed
+```
 
-Listing dengan status `removed` tidak ditampilkan pada:
+Listings with `removed` status are excluded from:
 
-* Browse listing
+* Listing browse
 * Search
 * Category listing
 
-Dengan pendekatan ini, data listing tetap tersedia di database dan dapat digunakan untuk kebutuhan audit atau pengembangan fitur berikutnya.
+This approach keeps listing data available in the database for auditing purposes and potential future features.
 
 ---
 
 ## 7. Validation
 
-Request validation menggunakan **Zod**.
+Request validation uses **Zod**.
 
-Validasi mencakup:
+Validation covers:
 
-* Required field
+* Required fields
 * UUID
-* Numeric value
-* Enum
+* Numeric values
+* Enum values
 * Price
 * Year
 * Mileage
 * Category
 * Listing attributes
 
-Jika request tidak valid, API mengembalikan:
+If the request is invalid, the API returns:
 
+```text
 422 Unprocessable Entity
+```
 
 ---
 
 ## 8. API Response
 
-API menggunakan format response yang konsisten.
+The API uses a consistent response format.
 
 ### Success Response
 
-json
+```json
 {
   "status": true,
   "message": "Success",
   "data": {}
 }
-
+```
 
 ### Error Response
 
-json
+```json
 {
   "status": false,
   "message": "Error message",
   "data": null
 }
+```
 
-
-HTTP status yang digunakan:
+HTTP status codes used:
 
 * `200 OK`
 * `201 Created`
@@ -353,38 +382,59 @@ HTTP status yang digunakan:
 
 ---
 
-## 9. API Endpoint
+## 9. API Endpoints
 
 ### Health
 
+```text
 GET /health
+
 GET /health/db
+```
 
 ### Listings
 
+```text
 POST   /api/v1/listings
+
 GET    /api/v1/listings
+
 GET    /api/v1/listings/:id
+
 PATCH  /api/v1/listings/:id
+
 DELETE /api/v1/listings/:id
+```
 
 ### Search
 
+```text
 GET /api/v1/listings/search
+
 GET /api/v1/listings/search/suggest
+```
 
 ### Categories
 
+```text
 GET    /api/v1/categories
+
 GET    /api/v1/categories/:id
+
 GET    /api/v1/categories/:id/listings
+
 POST   /api/v1/categories
+
 PATCH  /api/v1/categories/:id
+```
 
 ### Filters
 
+```text
 GET /api/v1/filters
+
 GET /api/v1/filters/:categoryId
+```
 
 ---
 
@@ -392,155 +442,177 @@ GET /api/v1/filters/:categoryId
 
 OpenAPI specification:
 
+```text
 docs/openapi.yaml
+```
 
 ### Swagger UI
 
-Swagger UI dapat digunakan untuk melihat dan mencoba endpoint API.
+Swagger UI can be used to view and test the API endpoints.
 
 Production:
 
-https://automotive-marketplace-api.vercel.app/api/docs
-
+[https://automotive-marketplace-api.vercel.app/api/docs]
 
 Local:
 
-http://localhost:3000/api/docs
-
+[http://localhost:3000/api/docs]
 
 ---
 
 ## 11. Live API
 
-API sudah tersedia pada environment production.
+The API is available in the production environment.
 
 ### Base URL
 
-https://automotive-marketplace-api.vercel.app
-
+[https://automotive-marketplace-api.vercel.app]
 
 ### Health Check
 
-https://automotive-marketplace-api.vercel.app/health
-
+[https://automotive-marketplace-api.vercel.app/health]
 
 ### Database Health Check
 
-https://automotive-marketplace-api.vercel.app/health/db
-
+[https://automotive-marketplace-api.vercel.app/health/db]
 
 ### Swagger Documentation
 
-https://automotive-marketplace-api.vercel.app/api/docs
+[https://automotive-marketplace-api.vercel.app/api/docs]
 
 ---
 
 ## 12. Environment
 
-Buat file `.env` berdasarkan `.env.example`.
+Create a `.env` file based on `.env.example`.
 
-Contoh:
+Example:
 
+```env
 PORT=3000
+
 DATABASE_URL=postgresql://postgres:password@localhost:5432/automotive_marketplace_db
+
 NODE_ENV=development
+```
 
-
-`DATABASE_URL` harus disesuaikan dengan PostgreSQL yang digunakan.
+`DATABASE_URL` must be configured according to the PostgreSQL instance being used.
 
 ---
 
-## 13. Instalasi
+## 13. Installation
 
-Clone repository:
+Clone the repository:
 
-bash
-git clone https://github.com/Andi1987/automotive-marketplace-api.git
+```bash
+git clone git@github.com:Andi1987/automotive-marketplace-api.git
+
 cd automotive-marketplace-api
+```
 
-Install dependency:
+Install dependencies:
 
-bash
+```bash
 npm install
+```
 
-Buat file `.env`:
+Create the `.env` file:
 
-bash
+```bash
 cp .env.example .env
+```
 
-Sesuaikan konfigurasi database pada `.env`.
+Update the database configuration in `.env`.
 
 ---
 
 ## 14. Migration
 
-Pastikan PostgreSQL sudah running.
+Make sure PostgreSQL is running.
 
-Jalankan migration:
+Run the migration:
 
-bash
+```bash
 npm run migrate
+```
 
-
-Migration akan membuat seluruh tabel dan index yang dibutuhkan oleh aplikasi.
+The migration creates all tables and indexes required by the application.
 
 ---
 
 ## 15. Seed Database
 
-Setelah migration selesai, jalankan:
+After the migration is complete, run:
 
-bash
+```bash
 npm run seed
+```
 
-Seed akan membuat data contoh untuk kebutuhan testing.
+The seed script creates sample data for testing and demonstration.
 
-Data yang dihasilkan:
+Generated data:
 
+```text
 8 categories
+
 48 filter attributes
+
 120 filter options
+
 500 listings
+
 3,000 dynamic attribute values
+
 1,000 listing images
+```
 
 ---
 
-## 16. Running Application
+## 16. Running the Application
 
 ### Development
 
-bash
+```bash
 npm run dev
+```
 
 ### Type Check
 
-bash
+```bash
 npm run typecheck
+```
 
 ### Build
 
-bash
+```bash
 npm run build
+```
 
 ### Production
 
-bash
+```bash
 npm start
+```
 
 Default local API:
 
-http://localhost:3000
-
+[http://localhost:3000]
 
 ### Health Check
 
-GET http://localhost:3000/health
+```text
+GET /health
+```
 
+[http://localhost:3000/health]
 
 ### Database Health Check
 
-GET http://localhost:3000/health/db
+```text
+GET /health/db
+```
+
+[http://localhost:3000/health/db]
 
 ---
 
@@ -548,9 +620,9 @@ GET http://localhost:3000/health/db
 
 ### Raw SQL
 
-Database access dilakukan menggunakan `pg` dan raw SQL.
+Database access uses `pg` and raw SQL.
 
-Alasannya adalah agar query database dapat dikontrol secara langsung, terutama untuk kebutuhan:
+The main reason is to maintain direct control over database queries, particularly for:
 
 * Complex filtering
 * Full-text search
@@ -560,57 +632,61 @@ Alasannya adalah agar query database dapat dikontrol secara langsung, terutama u
 
 ### Layered Architecture
 
-Routes, controllers, services, dan repositories dipisahkan agar setiap layer memiliki tanggung jawab yang jelas.
+Routes, controllers, services, and repositories are separated so that each layer has a clear responsibility.
 
 ### PostgreSQL Full-Text Search
 
-PostgreSQL `tsvector` digunakan untuk kebutuhan full-text search sehingga pencarian dapat dilakukan langsung pada database tanpa membutuhkan search engine tambahan.
+PostgreSQL `tsvector` is used for full-text search, allowing search operations to be performed directly in the database without requiring an additional search engine.
 
 ### Dynamic Attributes
 
-Dynamic attributes dipisahkan dari tabel `listings` agar penambahan filter baru tidak memerlukan perubahan schema utama.
+Dynamic attributes are separated from the `listings` table so that new filters can be introduced without modifying the main listing schema.
 
 ### Cursor Pagination
 
-Cursor pagination digunakan untuk menghindari penggunaan `OFFSET` besar ketika dataset berkembang.
+Cursor pagination is used to avoid relying on large `OFFSET` values as the dataset grows.
 
 ### Soft Delete
 
-Listing menggunakan status `removed` daripada menghapus row secara fisik.
+Listings use the `removed` status instead of physically deleting database rows.
 
-Pendekatan ini menjaga data tetap tersedia di database.
+This approach keeps listing data available in the database for auditing and potential future features.
 
 ---
 
 ## 18. Deployment
 
-Application deployment menggunakan:
+Application deployment uses:
 
+```text
 Vercel
+```
 
-Database production menggunakan:
+The production database uses:
 
+```text
 Neon PostgreSQL
+```
 
 Production API:
 
-https://automotive-marketplace-api.vercel.app
+[https://automotive-marketplace-api.vercel.app]
 
 ---
 
 ## 19. Repository
 
-Source code project tersedia di GitHub:
+The project source code is available on GitHub:
 
-https://github.com/Andi1987/automotive-marketplace-api
+[https://github.com/Andi1987/automotive-marketplace-api]
 
 ---
 
 ## 20. Notes
 
-Project ini dibuat sebagai backend REST API untuk kebutuhan assessment dan demonstrasi implementasi marketplace otomotif.
+This project was developed as a backend REST API for an automotive marketplace assessment and to demonstrate the implementation of a production-oriented marketplace backend.
 
-Fokus utama project:
+The main focus of the project is:
 
 * Relational database design
 * REST API
