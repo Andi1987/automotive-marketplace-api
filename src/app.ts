@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
+import path from "path";
 
 import { checkDatabaseConnection } from "./config/database";
 import { swaggerDocument } from "./config/swagger";
@@ -52,10 +53,30 @@ app.get("/health/db", async (_req, res) => {
 });
 
 /*
+ * Swagger UI assets
+ *
+ * Explicitly serve swagger-ui-dist static files.
+ * This is required for the Vercel serverless deployment.
+ */
+const swaggerUiPath = path.dirname(
+  require.resolve("swagger-ui-dist/package.json"),
+);
+
+app.use(
+  "/api/docs",
+  express.static(swaggerUiPath, {
+    index: false,
+  }),
+);
+
+/*
  * Swagger UI
  *
- * Open:
+ * Local:
  * http://localhost:3000/api/docs
+ *
+ * Production:
+ * https://automotive-marketplace-api.vercel.app/api/docs
  */
 app.use(
   "/api/docs",
