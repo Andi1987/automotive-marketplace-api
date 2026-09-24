@@ -163,7 +163,7 @@ export interface UpdateListingInput {
 }
 
 export interface ListingCursor {
-  created_at: Date;
+  created_at: string;
   id: string;
 }
 
@@ -171,7 +171,6 @@ export interface ListingPage {
   listings: Listing[];
   nextCursor: string | null;
 }
-
 
 export async function findListingById(
   id: string,
@@ -251,6 +250,10 @@ export async function findListingAttributes(
   return result.rows;
 }
 
+interface ListingRow extends Listing {
+  cursor_created_at: string;
+}
+
 export async function findListings(
   limit: number,
   cursor?: ListingCursor,
@@ -276,13 +279,14 @@ export async function findListings(
           description,
           status,
           created_at,
-          updated_at
+          updated_at,
+          created_at::text AS cursor_created_at
         FROM listings
         WHERE status <> 'removed'
           AND (
-            created_at < $1
+            created_at < $1::timestamptz
             OR (
-              created_at = $1
+              created_at = $1::timestamptz
               AND id < $2
             )
           )
@@ -307,7 +311,8 @@ export async function findListings(
           description,
           status,
           created_at,
-          updated_at
+          updated_at,
+          created_at::text AS cursor_created_at
         FROM listings
         WHERE status <> 'removed'
         ORDER BY created_at DESC, id DESC
@@ -318,25 +323,46 @@ export async function findListings(
     ? [cursor.created_at, cursor.id, safeLimit + 1]
     : [safeLimit + 1];
 
-  const result = await pool.query<Listing>(query, values);
+  const result = await pool.query<ListingRow>(query, values);
 
   const hasNextPage = result.rows.length > safeLimit;
+
   const rows = hasNextPage
     ? result.rows.slice(0, safeLimit)
     : result.rows;
+
+  const listings: Listing[] = rows.map((row) => ({
+    id: row.id,
+    seller_id: row.seller_id,
+    category_id: row.category_id,
+    make: row.make,
+    model: row.model,
+    year: row.year,
+    mileage: row.mileage,
+    price: row.price,
+    condition: row.condition,
+    transmission: row.transmission,
+    fuel_type: row.fuel_type,
+    color: row.color,
+    location: row.location,
+    description: row.description,
+    status: row.status,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
 
   const lastListing = rows[rows.length - 1];
 
   const nextCursor =
     hasNextPage && lastListing
       ? encodeCursor({
-          created_at: lastListing.created_at,
+          created_at: lastListing.cursor_created_at,
           id: lastListing.id,
         })
       : null;
 
   return {
-    listings: rows,
+    listings,
     nextCursor,
   };
 }
@@ -588,7 +614,7 @@ export async function replaceListingImages(
 
 export function encodeCursor(cursor: ListingCursor): string {
   const payload = JSON.stringify({
-    created_at: cursor.created_at.toISOString(),
+    created_at: cursor.created_at,
     id: cursor.id,
   });
 
@@ -617,7 +643,7 @@ export function decodeCursor(cursor: string): ListingCursor {
   }
 
   return {
-    created_at: createdAt,
+    created_at: payload.created_at,
     id: payload.id,
   };
 }
