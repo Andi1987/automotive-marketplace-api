@@ -19,6 +19,8 @@ info:
     name: Proprietary
 
 servers:
+  - url: https://automotive-marketplace-api.vercel.app
+    description: Production server
   - url: http://localhost:3000
     description: Local development server
 
