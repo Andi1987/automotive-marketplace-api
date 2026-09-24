@@ -138,4 +138,64 @@ export const listingQuerySchema = z.object({
     .trim()
     .min(1, "Cursor must not be empty")
     .optional(),
+
+  category_id: uuidSchema.optional(),
+
+  make: z
+    .string()
+    .trim()
+    .min(1, "Make must not be empty")
+    .optional(),
+
+  model: z
+    .string()
+    .trim()
+    .min(1, "Model must not be empty")
+    .optional(),
+
+  min_price: z.coerce
+    .number()
+    .min(0, "Minimum price must be greater than or equal to 0")
+    .optional(),
+
+  max_price: z.coerce
+    .number()
+    .min(0, "Maximum price must be greater than or equal to 0")
+    .optional(),
+
+  min_year: z.coerce
+    .number()
+    .int("Minimum year must be an integer")
+    .min(1900, "Minimum year must be at least 1900")
+    .optional(),
+
+  max_year: z.coerce
+    .number()
+    .int("Maximum year must be an integer")
+    .min(1900, "Maximum year must be at least 1900")
+    .optional(),
+
+  condition: z.enum([
+    "new",
+    "used",
+  ]).optional(),
+
+  transmission: z.enum([
+    "automatic",
+    "manual",
+    "cvt",
+  ]).optional(),
+
+  fuel_type: z.enum([
+    "bensin",
+    "diesel",
+    "hybrid",
+    "electric",
+  ]).optional(),
+
+  color: z
+    .string()
+    .trim()
+    .min(1, "Color must not be empty")
+    .optional(),
 });

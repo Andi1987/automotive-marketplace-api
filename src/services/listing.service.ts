@@ -11,80 +11,78 @@ import {
   type CreateListingInput,
   type Listing,
   type ListingPage,
+  type ListingRepositoryFilters,
   type UpdateListingInput,
 } from "../repositories/listing.repository";
 
-import {
-  findCategoryById,
-} from "../repositories/category.repository";
+export interface ListingFilters {
+  limit: number;
+  cursor?: string;
 
-
-export class ListingServiceError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: number,
-  ) {
-    super(message);
-    this.name = "ListingServiceError";
-  }
+  category_id?: string;
+  make?: string;
+  model?: string;
+  min_price?: number;
+  max_price?: number;
+  min_year?: number;
+  max_year?: number;
+  condition?: string;
+  transmission?: string;
+  fuel_type?: string;
+  color?: string;
 }
 
-export interface ListingDetail {
-  listing: Listing;
-  images: Awaited<ReturnType<typeof findListingImages>>;
-  attributes: Awaited<ReturnType<typeof findListingAttributes>>;
+export async function listListings(
+  filters: ListingFilters,
+): Promise<ListingPage> {
+  const decodedCursor = filters.cursor
+    ? decodeCursor(filters.cursor)
+    : undefined;
+
+  const repositoryFilters: ListingRepositoryFilters = {
+    limit: filters.limit,
+    cursor: decodedCursor,
+    category_id: filters.category_id,
+    make: filters.make,
+    model: filters.model,
+    min_price: filters.min_price,
+    max_price: filters.max_price,
+    min_year: filters.min_year,
+    max_year: filters.max_year,
+    condition: filters.condition,
+    transmission: filters.transmission,
+    fuel_type: filters.fuel_type,
+    color: filters.color,
+  };
+
+  return findListings(repositoryFilters);
 }
 
 export async function createNewListing(
   input: CreateListingInput,
-): Promise<ListingDetail> {
-  const category = await findCategoryById(input.category_id);
-
-  if (!category) {
-    throw new ListingServiceError(
-      "Category not found",
-      404,
-    );
-  }
-
-  if (!category.is_active) {
-    throw new ListingServiceError(
-      "Category is inactive",
-      409,
-    );
-  }
-
+): Promise<{
+  listing: Listing;
+  images: Awaited<
+    ReturnType<typeof findListingImages>
+  >;
+  attributes: Awaited<
+    ReturnType<typeof findListingAttributes>
+  >;
+}> {
   const listing = await createListing(input);
 
-  let images: Awaited<ReturnType<typeof findListingImages>> = [];
-
   if (input.images && input.images.length > 0) {
-    images = await createListingImages(
+    await createListingImages(
       listing.id,
       input.images,
     );
   }
 
-  return {
-    listing,
-    images,
-    attributes: [],
-  };
-}
-
-export async function getListingById(
-  id: string,
-): Promise<ListingDetail | null> {
-  const listing = await findListingById(id);
-
-  if (!listing) {
-    return null;
-  }
-
-  const [images, attributes] = await Promise.all([
-    findListingImages(id),
-    findListingAttributes(id),
-  ]);
+  const [images, attributes] =
+    await Promise.all([
+      findListingImages(listing.id),
+      findListingAttributes(listing.id),
+    ]);
 
   return {
     listing,
@@ -93,66 +91,48 @@ export async function getListingById(
   };
 }
 
-export async function listListings(
-  limit: number,
-  cursor?: string,
-): Promise<ListingPage> {
-  let decodedCursor;
+export async function getListingById(
+  id: string,
+): Promise<{
+  listing: Listing;
+  images: Awaited<
+    ReturnType<typeof findListingImages>
+  >;
+  attributes: Awaited<
+    ReturnType<typeof findListingAttributes>
+  >;
+} | null> {
+  const listing = await findListingById(id);
 
-  if (cursor) {
-    try {
-      decodedCursor = decodeCursor(cursor);
-    } catch {
-      throw new ListingServiceError(
-        "Invalid cursor",
-        400,
-      );
-    }
+  if (!listing) {
+    return null;
   }
 
-  return findListings(
-    limit,
-    decodedCursor,
-  );
+  const [images, attributes] =
+    await Promise.all([
+      findListingImages(id),
+      findListingAttributes(id),
+    ]);
+
+  return {
+    listing,
+    images,
+    attributes,
+  };
 }
 
 export async function updateExistingListing(
   id: string,
   input: UpdateListingInput,
-): Promise<ListingDetail | null> {
-  const existingListing = await findListingById(id);
-
-  if (!existingListing) {
-    return null;
-  }
-
-  if (existingListing.status === "removed") {
-    throw new ListingServiceError(
-      "Removed listing cannot be updated",
-      409,
-    );
-  }
-
-  if (input.category_id !== undefined) {
-    const category = await findCategoryById(
-      input.category_id,
-    );
-
-    if (!category) {
-      throw new ListingServiceError(
-        "Category not found",
-        404,
-      );
-    }
-
-    if (!category.is_active) {
-      throw new ListingServiceError(
-        "Category is inactive",
-        409,
-      );
-    }
-  }
-
+): Promise<{
+  listing: Listing;
+  images: Awaited<
+    ReturnType<typeof findListingImages>
+  >;
+  attributes: Awaited<
+    ReturnType<typeof findListingAttributes>
+  >;
+} | null> {
   const listing = await updateListing(
     id,
     input,
@@ -162,10 +142,11 @@ export async function updateExistingListing(
     return null;
   }
 
-  const [images, attributes] = await Promise.all([
-    findListingImages(id),
-    findListingAttributes(id),
-  ]);
+  const [images, attributes] =
+    await Promise.all([
+      findListingImages(id),
+      findListingAttributes(id),
+    ]);
 
   return {
     listing,
@@ -177,18 +158,15 @@ export async function updateExistingListing(
 export async function removeListing(
   id: string,
 ): Promise<Listing | null> {
-  const listing = await findListingById(id);
-
-  if (!listing) {
-    return null;
-  }
-
-  if (listing.status === "removed") {
-    throw new ListingServiceError(
-      "Listing has already been removed",
-      409,
-    );
-  }
-
   return softDeleteListing(id);
+}
+
+export class ListingServiceError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+  ) {
+    super(message);
+    this.name = "ListingServiceError";
+  }
 }

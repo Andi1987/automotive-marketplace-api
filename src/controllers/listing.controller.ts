@@ -172,10 +172,7 @@ export async function getListings(
   }
 
   try {
-    const result = await listListings(
-      parsed.data.limit,
-      parsed.data.cursor,
-    );
+    const result = await listListings(parsed.data);
 
     res.status(200).json({
       status: true,
