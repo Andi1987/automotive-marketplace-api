@@ -14,7 +14,6 @@ jobs:
           fetch-depth: 0
 
       - name: Mirror to GitLab
-        env:
-          GL_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          git push --prune --force https://oauth2:$GL_TOKEN@://gitlab.com refs/remotes/origin/*:refs/heads/*
+          git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@://gitlab.com
+          git push gitlab --prune --force refs/remotes/origin/*:refs/heads/*
