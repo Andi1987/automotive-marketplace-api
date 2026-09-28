@@ -2,11 +2,12 @@ name: Sync to GitLab
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,8 +18,7 @@ jobs:
         env:
           GL_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          # Kita rakit URL tujuan di dalam memori terminal agar aman dari sensor
-          GITLAB_URL="https://oauth2:${GL_TOKEN}@://gitlab.com"
-          
-          # Kirimkan perubahan kode secara paksa ke GitLab
-          git push --prune --force "$GITLAB_URL" refs/remotes/origin/*:refs/heads/*
+          GITLAB_URL="https://oauth2:${GL_TOKEN}@gitlab.com/andy.ami/automotive-marketplace-api.git"
+
+          git push --prune --force "$GITLAB_URL" \
+            refs/remotes/origin/*:refs/heads/*
