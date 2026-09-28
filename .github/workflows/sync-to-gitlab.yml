@@ -15,11 +15,14 @@ jobs:
 
       - name: Mirror to GitLab
         env:
-          # Kita isolasi token di sini agar terpisah dari URL utama
           GL_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          # Kita daftarkan remote URL menggunakan variabel token
-          git remote add gitlab https://oauth2:${GL_TOKEN}@://gitlab.com
+          # 1. Konfigurasi Git agar otomatis menyertakan Token HTTP saat mengakses gitlab.com
+          # Trik ini menyembunyikan token dari baris perintah URL biasa
+          git config --global http.https://gitlab.com "AUTHORIZATION: basic $(echo -n "oauth2:$GL_TOKEN" | base64)"
           
-          # Lakukan push semua branch ke gitlab
+          # 2. Daftarkan URL gitlab Anda secara normal dan bersih (tanpa embel-embel teks token)
+          git remote add gitlab https://gitlab.com
+          
+          # 3. Lakukan push mirror dengan aman
           git push gitlab refs/remotes/origin/*:refs/heads/* --prune --force
