@@ -54,7 +54,7 @@ Example:
 
 ```text
 Cars
- -  SUV
+ - SUV
  - Sedan
  - Hatchback
 
