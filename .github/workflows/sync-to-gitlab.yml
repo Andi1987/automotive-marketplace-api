@@ -17,12 +17,8 @@ jobs:
         env:
           GL_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          # 1. Konfigurasi Git agar otomatis menyertakan Token HTTP saat mengakses gitlab.com
-          # Trik ini menyembunyikan token dari baris perintah URL biasa
-          git config --global http.https://gitlab.com "AUTHORIZATION: basic $(echo -n "oauth2:$GL_TOKEN" | base64)"
+          # Kita rakit URL tujuan di dalam memori terminal agar aman dari sensor
+          GITLAB_URL="https://oauth2:${GL_TOKEN}@://gitlab.com"
           
-          # 2. Daftarkan URL gitlab Anda secara normal dan bersih (tanpa embel-embel teks token)
-          git remote add gitlab https://gitlab.com
-          
-          # 3. Lakukan push mirror dengan aman
-          git push gitlab refs/remotes/origin/*:refs/heads/* --prune --force
+          # Kirimkan perubahan kode secara paksa ke GitLab
+          git push --prune --force "$GITLAB_URL" refs/remotes/origin/*:refs/heads/*
